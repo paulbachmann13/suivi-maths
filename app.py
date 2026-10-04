@@ -1,9 +1,12 @@
 import os
+import re
 import sqlite3
+import unicodedata
 import subprocess
 import tempfile
 from datetime import date
 
+from markupsafe import Markup, escape
 from flask import (Flask, abort, flash, g, redirect, render_template, request,
                    send_file, url_for)
 
@@ -19,7 +22,10 @@ SCORE = {"ok": 1.0, "aide": 0.5, "ko": 0.0}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS chapitre (
-    id INTEGER PRIMARY KEY, nom TEXT NOT NULL UNIQUE, ordre INTEGER DEFAULT 0);
+    id INTEGER PRIMARY KEY, nom TEXT NOT NULL UNIQUE, ordre INTEGER DEFAULT 0,
+    domaine TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS recap (
+    chapitre_id INTEGER PRIMARY KEY REFERENCES chapitre(id), contenu TEXT NOT NULL DEFAULT '');
 CREATE TABLE IF NOT EXISTS notion (
     id INTEGER PRIMARY KEY, chapitre_id INTEGER NOT NULL REFERENCES chapitre(id),
     nom TEXT NOT NULL, UNIQUE(chapitre_id, nom));
@@ -59,6 +65,8 @@ def close_db(_):
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     conn.executescript(SCHEMA)
+    if "domaine" not in [r[1] for r in conn.execute("PRAGMA table_info(chapitre)")]:
+        conn.execute("ALTER TABLE chapitre ADD COLUMN domaine TEXT DEFAULT ''")
     conn.commit()
     conn.close()
 
@@ -72,6 +80,43 @@ def notions_groupees():
     for r in rows:
         groupes.setdefault(r["chapitre"], []).append(r)
     return groupes
+
+
+@app.template_filter("fmt")
+def fmt(text):
+    """Mini-mise en forme des recaps : '## titre', '- puce', '> encadré', '**gras**'."""
+    html, in_list, in_code = [], False, False
+    for raw in (text or "").split("\n"):
+        if raw.strip().startswith("```"):
+            if in_list:
+                html.append("</ul>")
+                in_list = False
+            html.append("</code></pre>" if in_code else "<pre><code>")
+            in_code = not in_code
+            continue
+        if in_code:
+            html.append(str(escape(raw.rstrip())))
+            continue
+        line = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", str(escape(raw.rstrip())))
+        line = re.sub(r"`([^`]+)`", r"<code>\1</code>", line)
+        if line.startswith("- "):
+            if not in_list:
+                html.append("<ul>")
+                in_list = True
+            html.append(f"<li>{line[2:]}</li>")
+            continue
+        if in_list:
+            html.append("</ul>")
+            in_list = False
+        if line.startswith("## "):
+            html.append(f"<h3>{line[3:]}</h3>")
+        elif line.startswith("&gt; "):
+            html.append(f'<p class="box">{line[5:]}</p>')
+        elif line.strip():
+            html.append(f"<p>{line}</p>")
+    if in_list:
+        html.append("</ul>")
+    return Markup("\n".join(html))
 
 
 @app.context_processor
@@ -114,6 +159,7 @@ def index():
 @app.route("/exos")
 def exos():
     notion = request.args.get("notion", type=int)
+    chapitre = request.args.get("chapitre", type=int)
     sql = ("SELECT e.*, n.nom AS notion, c.nom AS chapitre, "
            "(SELECT COUNT(*) FROM fiche_exo fe WHERE fe.exercice_id = e.id) AS nb_fiches "
            "FROM exercice e JOIN notion n ON n.id = e.notion_id "
@@ -122,9 +168,12 @@ def exos():
     if notion:
         sql += "WHERE n.id = ? "
         args.append(notion)
+    elif chapitre:
+        sql += "WHERE c.id = ? "
+        args.append(chapitre)
     sql += "ORDER BY c.ordre, c.nom, n.nom, e.difficulte, e.id"
     return render_template("exos.html", exos=db().execute(sql, args).fetchall(),
-                           groupes=notions_groupees(), notion=notion)
+                           groupes=notions_groupees(), notion=notion, chapitre=chapitre)
 
 
 @app.route("/exos/new", methods=["GET", "POST"])
@@ -183,6 +232,66 @@ def notions():
             conn.commit()
         return redirect(url_for("notions"))
     return render_template("notions.html", groupes=notions_groupees())
+
+
+# ---------- Fiches recap (cours) ----------
+
+def charger_recap(chap_id):
+    chap = db().execute("SELECT * FROM chapitre WHERE id = ?", (chap_id,)).fetchone()
+    if not chap:
+        abort(404)
+    row = db().execute("SELECT contenu FROM recap WHERE chapitre_id = ?", (chap_id,)).fetchone()
+    return chap, (row["contenu"] if row else "")
+
+
+@app.route("/recaps")
+def recaps():
+    rows = db().execute(
+        "SELECT c.*, r.contenu IS NOT NULL AND r.contenu != '' AS a_recap, "
+        "(SELECT COUNT(*) FROM exercice e JOIN notion n ON n.id = e.notion_id "
+        " WHERE n.chapitre_id = c.id) AS nb_exos "
+        "FROM chapitre c LEFT JOIN recap r ON r.chapitre_id = c.id ORDER BY c.ordre").fetchall()
+    domaines = {}
+    for r in rows:
+        domaines.setdefault(r["domaine"] or "Autres", []).append(r)
+    return render_template("recaps.html", domaines=domaines)
+
+
+@app.route("/recaps/<int:chap_id>")
+def recap_detail(chap_id):
+    chap, contenu = charger_recap(chap_id)
+    notions_ = db().execute("SELECT * FROM notion WHERE chapitre_id = ? ORDER BY id", (chap_id,)).fetchall()
+    return render_template("recap_detail.html", chap=chap, contenu=contenu, notions=notions_)
+
+
+@app.route("/recaps/<int:chap_id>/edit", methods=["GET", "POST"])
+def recap_edit(chap_id):
+    chap, contenu = charger_recap(chap_id)
+    if request.method == "POST":
+        db().execute("INSERT INTO recap (chapitre_id, contenu) VALUES (?,?) "
+                     "ON CONFLICT(chapitre_id) DO UPDATE SET contenu = excluded.contenu",
+                     (chap_id, request.form["contenu"].strip()))
+        db().commit()
+        flash("Fiche recap enregistrée.")
+        return redirect(url_for("recap_detail", chap_id=chap_id))
+    return render_template("recap_edit.html", chap=chap, contenu=contenu)
+
+
+@app.route("/recaps/<int:chap_id>/print")
+def recap_print(chap_id):
+    chap, contenu = charger_recap(chap_id)
+    return render_template("recap_print.html", chap=chap, contenu=contenu)
+
+
+@app.route("/recaps/<int:chap_id>/pdf")
+def recap_pdf(chap_id):
+    chap, _ = charger_recap(chap_id)
+    nom = f"recap_{chap_id:02d}_{re.sub(r'[^a-z0-9]+', '-', unicodedata.normalize('NFKD', chap['nom'].lower()).encode('ascii', 'ignore').decode()).strip('-')}.pdf"
+    err = html_vers_pdf(f"recaps/{chap_id}/print", nom)
+    if err:
+        flash(err)
+        return redirect(url_for("recap_detail", chap_id=chap_id))
+    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom)
 
 
 # ---------- Fiches ----------
@@ -269,26 +378,33 @@ def fiche_print(fiche_id):
                            corrige=request.args.get("corrige") == "1")
 
 
-@app.route("/fiches/<int:fiche_id>/pdf")
-def fiche_pdf(fiche_id):
-    corrige = request.args.get("corrige") == "1"
+def html_vers_pdf(chemin, nom):
+    """Imprime http://host/<chemin> en PDF avec Edge/Chrome. Renvoie un message d'erreur ou None."""
     browser = next((b for b in BROWSERS if os.path.exists(b)), None)
     if not browser:
-        flash("Edge/Chrome introuvable : utilise la page d'impression (Ctrl+P).")
-        return redirect(url_for("fiche_detail", fiche_id=fiche_id))
-    fiche, _ = charger_fiche(fiche_id)
-    nom = f"{fiche['date']}_{'corrige' if corrige else 'enonces'}_{fiche_id}.pdf"
+        return "Edge/Chrome introuvable : utilise la page d'impression (Ctrl+P)."
+    os.makedirs(os.path.join(BASE, "pdf"), exist_ok=True)
     out = os.path.join(BASE, "pdf", nom)
-    url = request.host_url + f"fiches/{fiche_id}/print" + ("?corrige=1" if corrige else "")
+    if os.path.exists(out):
+        os.remove(out)
     with tempfile.TemporaryDirectory() as profile:
         subprocess.run([browser, "--headless=new", "--disable-gpu", f"--user-data-dir={profile}",
                         "--no-pdf-header-footer", "--virtual-time-budget=8000",
-                        f"--print-to-pdf={out}", url],
+                        f"--print-to-pdf={out}", request.host_url + chemin],
                        check=False, timeout=60, capture_output=True)
-    if not os.path.exists(out):
-        flash("Échec de la génération PDF.")
+    return None if os.path.exists(out) else "Échec de la génération PDF."
+
+
+@app.route("/fiches/<int:fiche_id>/pdf")
+def fiche_pdf(fiche_id):
+    corrige = request.args.get("corrige") == "1"
+    fiche, _ = charger_fiche(fiche_id)
+    nom = f"{fiche['date']}_{'corrige' if corrige else 'enonces'}_{fiche_id}.pdf"
+    err = html_vers_pdf(f"fiches/{fiche_id}/print" + ("?corrige=1" if corrige else ""), nom)
+    if err:
+        flash(err)
         return redirect(url_for("fiche_detail", fiche_id=fiche_id))
-    return send_file(out, mimetype="application/pdf", download_name=nom)
+    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom)
 
 
 if __name__ == "__main__":

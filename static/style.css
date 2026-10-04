@@ -11,3 +11,5 @@ input,select,textarea{font:inherit;padding:6px;border:1px solid #c5ccd6;border-r
 table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px}td{padding:8px 12px;border-bottom:1px solid #eceff3}
 .bar{background:#e4e8ee;border-radius:6px;height:14px;overflow:hidden}.fill{height:100%}.g{background:#2e9e5b}.o{background:#e8a317}.r{background:#d64545}
 .tag{background:#eef1f6;border-radius:10px;padding:1px 8px;font-size:12px}.check{display:block;padding:3px 0}
+.recap h3{color:#1f3a5f;margin:18px 0 4px}.recap p{margin:4px 0}.box{border:1.5px solid #1f5fbf;background:#eef3fa;border-radius:6px;padding:6px 12px;margin:8px 0}
+.txt p{margin:3px 0}.txt pre,.recap pre{background:#f3f4f6;padding:8px 12px;border-radius:6px;overflow:auto}code{font-family:Consolas,monospace;background:#f3f4f6;padding:0 3px;border-radius:3px}pre code{background:none;padding:0}

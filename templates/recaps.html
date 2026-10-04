@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block body %}
+<h1>Fiches recap (cours)</h1>
+<p class="muted">Une fiche de cours par chapitre, d'après le programme de Seconde. Tu peux les modifier et les exporter en PDF.</p>
+{% for domaine, chaps in domaines.items() %}
+<h2>{{ domaine }}</h2>
+<table>{% for c in chaps %}
+<tr><td><a href="{{ url_for('recap_detail', chap_id=c.id) }}">{{ c.nom }}</a></td>
+<td class="muted">{{ c.nb_exos }} exos</td>
+<td>{% if c.a_recap %}<span class="tag">recap ✔</span>{% else %}<span class="muted">pas de recap</span>{% endif %}</td>
+<td><a href="{{ url_for('exos', chapitre=c.id) }}">exercices</a></td></tr>{% endfor %}</table>
+{% endfor %}{% endblock %}

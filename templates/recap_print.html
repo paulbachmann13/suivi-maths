@@ -1,0 +1,13 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>{{ chap.nom }}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>@page{margin:16mm}body{font:11.5pt/1.45 "Segoe UI",Arial,sans-serif;color:#000}
+h1{font-size:18pt;border-bottom:2px solid #1f3a5f;padding-bottom:4px;margin-bottom:2px}
+.dom{color:#555;font-size:10pt;margin-bottom:10px}
+h3{font-size:12.5pt;color:#1f3a5f;margin:14px 0 4px;break-after:avoid}p{margin:4px 0}pre{background:#f3f4f6;padding:6px 10px;border-radius:4px}code{font-family:Consolas,monospace}ul{margin:4px 0;padding-left:22px}
+.box{border:1.5px solid #1f3a5f;background:#eef3fa;border-radius:4px;padding:5px 10px;margin:6px 0;break-inside:avoid}</style>
+<script>window.addEventListener('load',()=>renderMathInElement(document.body,{delimiters:[
+{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false}));</script></head>
+<body><h1>{{ chap.nom }}</h1><div class="dom">Fiche recap · Seconde · {{ chap.domaine }}</div>
+{{ contenu|fmt }}</body></html>

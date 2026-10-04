@@ -6,8 +6,8 @@
 <form method="post">
 <p>Statut : <select name="statut">{% for s in ('brouillon','envoyée','corrigée') %}<option {{ 'selected' if fiche.statut==s }}>{{ s }}</option>{% endfor %}</select></p>
 {% for l in lignes %}<div class="card"><b>{{ loop.index }}. {{ l.titre }}</b> <span class="muted">{{ l.notion }} · {{ '★'*l.difficulte }}</span>
-<div class="math">{{ l.enonce }}</div>
-<details><summary>Correction</summary><div class="math">{{ l.correction }}</div></details>
+<div class="txt">{{ l.enonce|fmt }}</div>
+<details><summary>Correction</summary><div class="txt">{{ l.correction|fmt }}</div></details>
 <div class="row">{% for k, v in RESULTATS.items() %}<label><input type="radio" name="res_{{ l.id }}" value="{{ k }}" {{ 'checked' if l.resultat==k }}> {{ v }}</label>{% endfor %}
 <label><input type="radio" name="res_{{ l.id }}" value="" {{ 'checked' if not l.resultat }}> non noté</label></div>
 <input name="rem_{{ l.id }}" placeholder="Remarque (ex. confond image et antécédent)" value="{{ l.remarque }}" style="width:100%"></div>{% endfor %}
