@@ -1,0 +1,16 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>{{ fiche.titre }}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>@page{margin:18mm}body{font:12pt/1.5 "Segoe UI",Arial,sans-serif;color:#000}
+h1{font-size:18pt;border-bottom:2px solid #000;padding-bottom:4px}h2{font-size:13pt;margin:18px 0 4px}
+.m{white-space:pre-wrap}.exo{break-inside:avoid;margin-bottom:14px}.corr{margin-top:6px;padding:6px 10px;border-left:3px solid #2a7;background:#f1faf5}
+.meta{color:#555;font-size:10pt}</style>
+<script>window.addEventListener('load',()=>renderMathInElement(document.body,{delimiters:[
+{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false}));</script></head>
+<body><h1>{{ fiche.titre }}{% if corrige %} — Corrigé{% endif %}</h1>
+<p class="meta">{{ fiche.date }}{% if not corrige %} · Nom : ____________________{% endif %}</p>
+{% for l in lignes %}<div class="exo"><h2>Exercice {{ loop.index }} <span class="meta">— {{ l.titre }}</span></h2>
+<div class="m">{{ l.enonce }}</div>
+{% if corrige %}<div class="corr"><b>Correction</b><div class="m">{{ l.correction }}</div></div>{% endif %}</div>{% endfor %}
+</body></html>

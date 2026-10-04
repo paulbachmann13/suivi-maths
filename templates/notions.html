@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block body %}
+<h1>Chapitres et notions</h1>
+<form method="post" class="row"><input name="chapitre" list="chaps" placeholder="Chapitre" required>
+<datalist id="chaps">{% for c in groupes %}<option value="{{ c }}">{% endfor %}</datalist>
+<input name="notion" placeholder="Nouvelle notion" required><button class="btn">Ajouter</button></form>
+{% for chap, ns in groupes.items() %}<h2>{{ chap }}</h2><ul>{% for n in ns %}<li>{{ n.nom }}</li>{% endfor %}</ul>{% endfor %}
+{% endblock %}

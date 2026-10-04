@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block body %}
+<h1>{{ fiche.titre }} <span class="muted">{{ fiche.date }}</span></h1>
+<div class="row"><a class="btn" href="{{ url_for('fiche_pdf', fiche_id=fiche.id) }}" target="_blank">PDF énoncés (élève)</a>
+<a class="btn" href="{{ url_for('fiche_pdf', fiche_id=fiche.id, corrige=1) }}" target="_blank">PDF corrigé (toi)</a>
+<a href="{{ url_for('fiche_print', fiche_id=fiche.id) }}" target="_blank">aperçu imprimable</a></div>
+<form method="post">
+<p>Statut : <select name="statut">{% for s in ('brouillon','envoyée','corrigée') %}<option {{ 'selected' if fiche.statut==s }}>{{ s }}</option>{% endfor %}</select></p>
+{% for l in lignes %}<div class="card"><b>{{ loop.index }}. {{ l.titre }}</b> <span class="muted">{{ l.notion }} · {{ '★'*l.difficulte }}</span>
+<div class="math">{{ l.enonce }}</div>
+<details><summary>Correction</summary><div class="math">{{ l.correction }}</div></details>
+<div class="row">{% for k, v in RESULTATS.items() %}<label><input type="radio" name="res_{{ l.id }}" value="{{ k }}" {{ 'checked' if l.resultat==k }}> {{ v }}</label>{% endfor %}
+<label><input type="radio" name="res_{{ l.id }}" value="" {{ 'checked' if not l.resultat }}> non noté</label></div>
+<input name="rem_{{ l.id }}" placeholder="Remarque (ex. confond image et antécédent)" value="{{ l.remarque }}" style="width:100%"></div>{% endfor %}
+<button class="btn">Enregistrer</button></form>
+<form method="post" action="{{ url_for('fiche_delete', fiche_id=fiche.id) }}" onsubmit="return confirm('Supprimer la fiche ?')"><button class="danger">Supprimer la fiche</button></form>
+<script>document.addEventListener('toggle',e=>renderMath(e.target),true)</script>{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block body %}
+<h1>{{ 'Modifier' if exo else 'Nouvel' }} exercice</h1>
+<p class="muted">Formules en LaTeX entre <code>$...$</code> (ex. <code>$f(x)=2x^2-3$</code>, <code>$\dfrac{a}{b}$</code>, <code>$\sqrt{x}$</code>). L'aperçu se met à jour en direct.</p>
+<form method="post" class="form">
+<label>Notion <select name="notion_id" required>
+{% for chap, ns in groupes.items() %}<optgroup label="{{ chap }}">{% for n in ns %}
+<option value="{{ n.id }}" {{ 'selected' if (exo and exo.notion_id==n.id) or (not exo and notion==n.id) }}>{{ n.nom }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>
+<label>Titre <input name="titre" required value="{{ exo.titre if exo }}"></label>
+<label>Difficulté <select name="difficulte">{% for d in (1,2,3) %}<option value="{{ d }}" {{ 'selected' if exo and exo.difficulte==d }}>{{ '★'*d }}</option>{% endfor %}</select></label>
+<label>Énoncé <textarea name="enonce" id="enonce" rows="6" required>{{ exo.enonce if exo }}</textarea></label>
+<div class="math preview" id="p_enonce"></div>
+<label>Correction <textarea name="correction" id="correction" rows="6">{{ exo.correction if exo }}</textarea></label>
+<div class="math preview" id="p_correction"></div>
+<label>Source <input name="source" placeholder="manuel, site, Claude, moi…" value="{{ exo.source if exo }}"></label>
+<button class="btn">Enregistrer</button></form>
+<script>
+function bind(a,b){const t=document.getElementById(a),p=document.getElementById(b);
+ const u=()=>{p.textContent=t.value;renderMath(p)};t.addEventListener('input',u);window.addEventListener('load',u);}
+bind('enonce','p_enonce');bind('correction','p_correction');
+</script>{% endblock %}

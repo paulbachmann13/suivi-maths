@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block body %}
+<h1>Tableau de bord</h1>
+<p class="muted">Maîtrise = moyenne du dernier résultat de chaque exo fait (réussi 100 %, avec aide 50 %, pas compris 0 %).</p>
+{% for chap, notions in chapitres.items() %}
+<h2>{{ chap }}</h2>
+<table>{% for n in notions %}
+<tr><td style="width:40%"><a href="{{ url_for('exos', notion=n.id) }}">{{ n.nom }}</a></td>
+<td style="width:35%">{% if n.maitrise is none %}<span class="muted">pas encore travaillé</span>
+{% else %}<div class="bar"><div class="fill {{ 'g' if n.maitrise>=75 else 'o' if n.maitrise>=40 else 'r' }}" style="width:{{ n.maitrise }}%"></div></div>{% endif %}</td>
+<td>{% if n.maitrise is not none %}{{ n.maitrise }} %{% endif %}</td>
+<td class="muted">{{ n.faits }}/{{ n.total }} exos faits</td></tr>{% endfor %}</table>
+{% endfor %}{% endblock %}

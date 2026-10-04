@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block body %}
+<h1>Banque d'exercices</h1>
+<form method="get" class="row">
+<select name="notion" onchange="this.form.submit()"><option value="">Toutes les notions</option>
+{% for chap, ns in groupes.items() %}<optgroup label="{{ chap }}">{% for n in ns %}
+<option value="{{ n.id }}" {{ 'selected' if n.id==notion }}>{{ n.nom }}</option>{% endfor %}</optgroup>{% endfor %}</select>
+<a class="btn" href="{{ url_for('exo_form', notion=notion) }}">+ Nouvel exercice</a></form>
+{% for e in exos %}
+<details class="card"><summary><b>{{ e.titre }}</b> <span class="muted">— {{ e.chapitre }} › {{ e.notion }} · {{ '★'*e.difficulte }}{% if e.nb_fiches %} · utilisé {{ e.nb_fiches }}×{% endif %}</span></summary>
+<div class="math">{{ e.enonce }}</div>
+{% if e.correction %}<h4>Correction</h4><div class="math">{{ e.correction }}</div>{% endif %}
+{% if e.source %}<p class="muted">Source : {{ e.source }}</p>{% endif %}
+<div class="row"><a class="btn" href="{{ url_for('exo_form', exo_id=e.id) }}">Modifier</a>
+<form method="post" action="{{ url_for('exo_delete', exo_id=e.id) }}" onsubmit="return confirm('Supprimer ?')"><button class="danger">Supprimer</button></form></div>
+</details>{% else %}<p>Aucun exercice.</p>{% endfor %}
+<script>document.addEventListener('toggle',e=>renderMath(e.target),true)</script>
+{% endblock %}

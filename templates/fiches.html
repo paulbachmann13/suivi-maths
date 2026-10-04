@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block body %}
+<h1>Fiches</h1><a class="btn" href="{{ url_for('fiche_new') }}">+ Nouvelle fiche</a>
+<table>{% for f in fiches %}<tr><td>{{ f.date }}</td><td><a href="{{ url_for('fiche_detail', fiche_id=f.id) }}">{{ f.titre }}</a></td>
+<td>{{ f.nb }} exos</td><td><span class="tag">{{ f.statut }}</span></td><td class="muted">{{ f.notes or 0 }}/{{ f.nb }} notés</td></tr>
+{% else %}<tr><td>Aucune fiche.</td></tr>{% endfor %}</table>{% endblock %}

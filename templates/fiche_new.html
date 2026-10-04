@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block body %}
+<h1>Nouvelle fiche</h1>
+<form method="post">
+<div class="row"><input name="titre" placeholder="Titre (ex. Fonctions affines)" required><input type="date" name="date" value="{{ today }}"></div>
+<p class="muted">Coche les exercices. ✔ = déjà donné, avec le dernier résultat.</p>
+{% for (chap, notion), es in groupes.items() %}<h3>{{ chap }} › {{ notion }}</h3>
+{% for e in es %}<label class="check"><input type="checkbox" name="exo" value="{{ e.id }}"> {{ e.titre }} <span class="muted">{{ '★'*e.difficulte }}</span>
+{% if e.deja %}<span class="tag">✔ {{ RESULTATS.get(e.dernier, 'non noté') }}</span>{% endif %}</label>{% endfor %}{% endfor %}
+<p><button class="btn">Créer la fiche</button></p></form>{% endblock %}
