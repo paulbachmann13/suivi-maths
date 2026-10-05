@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS chapitre (
     id INTEGER PRIMARY KEY, nom TEXT NOT NULL UNIQUE, ordre INTEGER DEFAULT 0,
     domaine TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS recap (
-    chapitre_id INTEGER PRIMARY KEY REFERENCES chapitre(id), contenu TEXT NOT NULL DEFAULT '');
+    chapitre_id INTEGER PRIMARY KEY REFERENCES chapitre(id), contenu TEXT NOT NULL DEFAULT '',
+    rappel TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS notion (
     id INTEGER PRIMARY KEY, chapitre_id INTEGER NOT NULL REFERENCES chapitre(id),
     nom TEXT NOT NULL, UNIQUE(chapitre_id, nom));
@@ -35,7 +36,7 @@ CREATE TABLE IF NOT EXISTS exercice (
     difficulte INTEGER DEFAULT 1, source TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS fiche (
     id INTEGER PRIMARY KEY, titre TEXT NOT NULL, date TEXT NOT NULL,
-    statut TEXT DEFAULT 'brouillon');
+    statut TEXT DEFAULT 'brouillon', rappels INTEGER DEFAULT 1);
 CREATE TABLE IF NOT EXISTS fiche_exo (
     fiche_id INTEGER NOT NULL REFERENCES fiche(id) ON DELETE CASCADE,
     exercice_id INTEGER NOT NULL REFERENCES exercice(id),
@@ -67,6 +68,10 @@ def init_db():
     conn.executescript(SCHEMA)
     if "domaine" not in [r[1] for r in conn.execute("PRAGMA table_info(chapitre)")]:
         conn.execute("ALTER TABLE chapitre ADD COLUMN domaine TEXT DEFAULT ''")
+    if "rappel" not in [r[1] for r in conn.execute("PRAGMA table_info(recap)")]:
+        conn.execute("ALTER TABLE recap ADD COLUMN rappel TEXT DEFAULT ''")
+    if "rappels" not in [r[1] for r in conn.execute("PRAGMA table_info(fiche)")]:
+        conn.execute("ALTER TABLE fiche ADD COLUMN rappels INTEGER DEFAULT 1")
     conn.commit()
     conn.close()
 
@@ -314,9 +319,10 @@ def fiche_new():
             flash("Choisis au moins un exercice.")
             return redirect(url_for("fiche_new"))
         conn = db()
-        fid = conn.execute("INSERT INTO fiche (titre, date) VALUES (?,?)",
+        fid = conn.execute("INSERT INTO fiche (titre, date, rappels) VALUES (?,?,?)",
                            (request.form["titre"].strip() or "Fiche d'exercices",
-                            request.form.get("date") or date.today().isoformat())).lastrowid
+                            request.form.get("date") or date.today().isoformat(),
+                            1 if request.form.get("rappels") else 0)).lastrowid
         for i, eid in enumerate(ids):
             conn.execute("INSERT INTO fiche_exo (fiche_id, exercice_id, ordre) VALUES (?,?,?)",
                          (fid, eid, i))
@@ -357,7 +363,8 @@ def fiche_detail(fiche_id):
             res = request.form.get(f"res_{l['id']}") or None
             conn.execute("UPDATE fiche_exo SET resultat=?, remarque=? WHERE fiche_id=? AND exercice_id=?",
                          (res, request.form.get(f"rem_{l['id']}", "").strip(), fiche_id, l["id"]))
-        conn.execute("UPDATE fiche SET statut=? WHERE id=?", (request.form["statut"], fiche_id))
+        conn.execute("UPDATE fiche SET statut=?, rappels=? WHERE id=?",
+                     (request.form["statut"], 1 if request.form.get("rappels") else 0, fiche_id))
         conn.commit()
         flash("Fiche enregistrée.")
         return redirect(url_for("fiche_detail", fiche_id=fiche_id))
@@ -374,7 +381,20 @@ def fiche_delete(fiche_id):
 @app.route("/fiches/<int:fiche_id>/print")
 def fiche_print(fiche_id):
     fiche, lignes = charger_fiche(fiche_id)
-    return render_template("print.html", fiche=fiche, lignes=lignes,
+    rappels = []
+    if fiche["rappels"]:
+        # un rappel par chapitre concerné ; à défaut de rappel dédié, on reprend les encadrés du recap
+        rows = db().execute(
+            "SELECT DISTINCT c.id, c.nom, c.ordre, r.contenu, r.rappel FROM fiche_exo fe "
+            "JOIN exercice e ON e.id = fe.exercice_id JOIN notion n ON n.id = e.notion_id "
+            "JOIN chapitre c ON c.id = n.chapitre_id LEFT JOIN recap r ON r.chapitre_id = c.id "
+            "WHERE fe.fiche_id = ? ORDER BY c.ordre", (fiche_id,)).fetchall()
+        for r in rows:
+            texte = r["rappel"] or "\n".join(
+                l for l in (r["contenu"] or "").split("\n") if l.startswith("> "))
+            if texte.strip():
+                rappels.append({"nom": r["nom"], "texte": texte})
+    return render_template("print.html", fiche=fiche, lignes=lignes, rappels=rappels,
                            corrige=request.args.get("corrige") == "1")
 
 

@@ -35,6 +35,9 @@ def main():
             if c.execute("INSERT OR IGNORE INTO recap (chapitre_id, contenu) VALUES (?,?)",
                          (cid, chap["recap"].strip())).rowcount:
                 nb_recaps += 1
+            if chap.get("rappel"):
+                c.execute("UPDATE recap SET rappel = ? WHERE chapitre_id = ? AND (rappel IS NULL OR rappel = '')",
+                          (chap["rappel"].strip(), cid))
             for notion, titre, diff, enonce, corr in chap["exos"]:
                 nid = notion_id[notion]
                 if c.execute("SELECT 1 FROM exercice WHERE notion_id = ? AND titre = ?", (nid, titre)).fetchone():

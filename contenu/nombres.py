@@ -407,3 +407,11 @@ $S=\left]-\dfrac13\,;2\right[$."""),
         ],
     ),
 ]
+
+# Séries supplémentaires et rappels de cours courts (voir complements.py)
+from .complements import RAPPELS, SUPPL  # noqa: E402
+
+for _chap in CHAPITRES:
+    _chap["exos"] = _chap["exos"] + SUPPL.get(_chap["nom"], [])
+    if _chap["nom"] in RAPPELS:
+        _chap["rappel"] = RAPPELS[_chap["nom"]]

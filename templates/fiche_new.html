@@ -2,6 +2,7 @@
 <h1>Nouvelle fiche</h1>
 <form method="post">
 <div class="row"><input name="titre" placeholder="Titre (ex. Fonctions affines)" required><input type="date" name="date" value="{{ today }}"></div>
+<p><label><input type="checkbox" name="rappels" checked> Ajouter les rappels de cours (formules clés des chapitres concernés) en haut du PDF</label></p>
 <p class="muted">Coche les exercices. ✔ = déjà donné, avec le dernier résultat.</p>
 {% for (chap, notion), es in groupes.items() %}<h3>{{ chap }} › {{ notion }}</h3>
 {% for e in es %}<label class="check"><input type="checkbox" name="exo" value="{{ e.id }}"> {{ e.titre }} <span class="muted">{{ '★'*e.difficulte }}</span>

@@ -5,11 +5,17 @@
 <style>@page{margin:18mm}body{font:12pt/1.5 "Segoe UI",Arial,sans-serif;color:#000}
 h1{font-size:18pt;border-bottom:2px solid #000;padding-bottom:4px}h2{font-size:13pt;margin:18px 0 4px}
 .m p{margin:3px 0}pre{background:#f3f4f6;padding:6px 10px;border-radius:4px;font-size:10.5pt}code{font-family:Consolas,monospace}.exo{break-inside:avoid;margin-bottom:14px}.corr{margin-top:6px;padding:6px 10px;border-left:3px solid #2a7;background:#f1faf5}
-.meta{color:#555;font-size:10pt}</style>
+.meta{color:#555;font-size:10pt}
+.rappels{border:2px solid #1f3a5f;border-radius:6px;padding:4px 12px 8px;margin:10px 0 18px;break-inside:avoid}
+.rappels h2{margin:6px 0 2px;color:#1f3a5f}.rappels .chap{font-size:10pt;color:#555;margin:6px 0 0;font-weight:600}
+.rappels .box{margin:3px 0;padding:2px 8px;border:0;border-left:3px solid #1f3a5f;background:#eef3fa}.rappels p{margin:3px 0}
+.rappels h3{font-size:11pt;margin:6px 0 2px}</style>
 <script>window.addEventListener('load',()=>renderMathInElement(document.body,{delimiters:[
 {left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false}));</script></head>
 <body><h1>{{ fiche.titre }}{% if corrige %} — Corrigé{% endif %}</h1>
 <p class="meta">{{ fiche.date }}{% if not corrige %} · Nom : ____________________{% endif %}</p>
+{% if rappels %}<div class="rappels"><h2>Rappels de cours</h2>
+{% for r in rappels %}<div class="chap">{{ r.nom }}</div>{{ r.texte|fmt }}{% endfor %}</div>{% endif %}
 {% for l in lignes %}<div class="exo"><h2>Exercice {{ loop.index }} <span class="meta">— {{ l.titre }}</span></h2>
 <div class="m">{{ l.enonce|fmt }}</div>
 {% if corrige %}<div class="corr"><b>Correction</b><div class="m">{{ l.correction|fmt }}</div></div>{% endif %}</div>{% endfor %}

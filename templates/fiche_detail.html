@@ -4,7 +4,8 @@
 <a class="btn" href="{{ url_for('fiche_pdf', fiche_id=fiche.id, corrige=1) }}" target="_blank">PDF corrigé (toi)</a>
 <a href="{{ url_for('fiche_print', fiche_id=fiche.id) }}" target="_blank">aperçu imprimable</a></div>
 <form method="post">
-<p>Statut : <select name="statut">{% for s in ('brouillon','envoyée','corrigée') %}<option {{ 'selected' if fiche.statut==s }}>{{ s }}</option>{% endfor %}</select></p>
+<p>Statut : <select name="statut">{% for s in ('brouillon','envoyée','corrigée') %}<option {{ 'selected' if fiche.statut==s }}>{{ s }}</option>{% endfor %}</select>
+ &nbsp; <label><input type="checkbox" name="rappels" {{ 'checked' if fiche.rappels }}> Rappels de cours dans le PDF</label></p>
 {% for l in lignes %}<div class="card"><b>{{ loop.index }}. {{ l.titre }}</b> <span class="muted">{{ l.notion }} · {{ '★'*l.difficulte }}</span>
 <div class="txt">{{ l.enonce|fmt }}</div>
 <details><summary>Correction</summary><div class="txt">{{ l.correction|fmt }}</div></details>
