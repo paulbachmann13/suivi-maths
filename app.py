@@ -378,24 +378,65 @@ def fiche_delete(fiche_id):
     return redirect(url_for("fiches"))
 
 
+def rappels_chapitres(chap_ids):
+    """Un rappel par chapitre ; à défaut de rappel dédié, on reprend les encadrés du recap."""
+    if not chap_ids:
+        return []
+    marques = ",".join("?" * len(chap_ids))
+    rows = db().execute(
+        f"SELECT c.nom, r.contenu, r.rappel FROM chapitre c LEFT JOIN recap r ON r.chapitre_id = c.id "
+        f"WHERE c.id IN ({marques}) ORDER BY c.ordre", list(chap_ids)).fetchall()
+    rappels = []
+    for r in rows:
+        lignes_box = [l for l in (r["contenu"] or "").splitlines() if l.startswith("> ")]
+        texte = r["rappel"] or "\n".join(lignes_box)
+        if texte.strip():
+            rappels.append({"nom": r["nom"], "texte": texte})
+    return rappels
+
+
 @app.route("/fiches/<int:fiche_id>/print")
 def fiche_print(fiche_id):
     fiche, lignes = charger_fiche(fiche_id)
     rappels = []
     if fiche["rappels"]:
-        # un rappel par chapitre concerné ; à défaut de rappel dédié, on reprend les encadrés du recap
-        rows = db().execute(
-            "SELECT DISTINCT c.id, c.nom, c.ordre, r.contenu, r.rappel FROM fiche_exo fe "
-            "JOIN exercice e ON e.id = fe.exercice_id JOIN notion n ON n.id = e.notion_id "
-            "JOIN chapitre c ON c.id = n.chapitre_id LEFT JOIN recap r ON r.chapitre_id = c.id "
-            "WHERE fe.fiche_id = ? ORDER BY c.ordre", (fiche_id,)).fetchall()
-        for r in rows:
-            texte = r["rappel"] or "\n".join(
-                l for l in (r["contenu"] or "").split("\n") if l.startswith("> "))
-            if texte.strip():
-                rappels.append({"nom": r["nom"], "texte": texte})
+        ids = [r[0] for r in db().execute(
+            "SELECT DISTINCT n.chapitre_id FROM fiche_exo fe JOIN exercice e ON e.id = fe.exercice_id "
+            "JOIN notion n ON n.id = e.notion_id WHERE fe.fiche_id = ?", (fiche_id,))]
+        rappels = rappels_chapitres(ids)
     return render_template("print.html", fiche=fiche, lignes=lignes, rappels=rappels,
                            corrige=request.args.get("corrige") == "1")
+
+
+@app.route("/exos/chapitre/<int:chap_id>/print")
+def chapitre_print(chap_id):
+    chap = db().execute("SELECT * FROM chapitre WHERE id = ?", (chap_id,)).fetchone()
+    if not chap:
+        abort(404)
+    lignes = db().execute(
+        "SELECT e.*, n.nom AS notion FROM exercice e JOIN notion n ON n.id = e.notion_id "
+        "WHERE n.chapitre_id = ? ORDER BY e.difficulte, e.id", (chap_id,)).fetchall()
+    fiche = {"titre": f"Exercices : {chap['nom']}", "date": date.today().isoformat()}
+    rappels = rappels_chapitres([chap_id]) if request.args.get("rappels", "1") == "1" else []
+    return render_template("print.html", fiche=fiche, lignes=lignes, rappels=rappels,
+                           corrige=request.args.get("corrige") == "1")
+
+
+@app.route("/exos/chapitre/<int:chap_id>/pdf")
+def chapitre_pdf(chap_id):
+    corrige = request.args.get("corrige") == "1"
+    chap = db().execute("SELECT nom FROM chapitre WHERE id = ?", (chap_id,)).fetchone()
+    if not chap:
+        abort(404)
+    slug = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", chap["nom"].lower())
+                  .encode("ascii", "ignore").decode()).strip("-")
+    nom = f"exos_{chap_id:02d}_{slug}{'_corrige' if corrige else ''}.pdf"
+    q = "?" + "&".join(k + "=" + v for k, v in request.args.items() if k in ("corrige", "rappels"))
+    err = html_vers_pdf(f"exos/chapitre/{chap_id}/print" + (q if len(q) > 1 else ""), nom)
+    if err:
+        flash(err)
+        return redirect(url_for("exos", chapitre=chap_id))
+    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom)
 
 
 def html_vers_pdf(chemin, nom):
