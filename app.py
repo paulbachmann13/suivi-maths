@@ -443,6 +443,37 @@ def chapitre_pdf(chap_id):
     return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom, as_attachment=True)
 
 
+@app.route("/exos/notion/<int:notion_id>/print")
+def notion_print(notion_id):
+    notion = db().execute("SELECT * FROM notion WHERE id = ?", (notion_id,)).fetchone()
+    if not notion:
+        abort(404)
+    lignes = db().execute(
+        "SELECT e.*, n.nom AS notion FROM exercice e JOIN notion n ON n.id = e.notion_id "
+        "WHERE n.id = ? ORDER BY e.difficulte, e.id", (notion_id,)).fetchall()
+    fiche = {"titre": f"Exercices : {notion['nom']}", "date": date.today().isoformat()}
+    rappels = rappels_chapitres([notion["chapitre_id"]]) if request.args.get("rappels", "1") == "1" else []
+    return render_template("print.html", fiche=fiche, lignes=lignes, rappels=rappels,
+                           corrige=request.args.get("corrige") == "1")
+
+
+@app.route("/exos/notion/<int:notion_id>/pdf")
+def notion_pdf(notion_id):
+    corrige = request.args.get("corrige") == "1"
+    notion = db().execute("SELECT nom FROM notion WHERE id = ?", (notion_id,)).fetchone()
+    if not notion:
+        abort(404)
+    slug = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", notion["nom"].lower())
+                  .encode("ascii", "ignore").decode()).strip("-")
+    nom = f"exos_notion_{notion_id:02d}_{slug}{'_corrige' if corrige else ''}.pdf"
+    q = "?" + "&".join(k + "=" + v for k, v in request.args.items() if k in ("corrige", "rappels"))
+    err = html_vers_pdf(f"exos/notion/{notion_id}/print" + (q if len(q) > 1 else ""), nom)
+    if err:
+        flash(err)
+        return redirect(url_for("exos", notion=notion_id))
+    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom, as_attachment=True)
+
+
 def html_vers_pdf(chemin, nom):
     """Imprime http://host/<chemin> en PDF avec Edge/Chrome. Renvoie un message d'erreur ou None."""
     browser = next((b for b in BROWSERS if os.path.exists(b)), None)

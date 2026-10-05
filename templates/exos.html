@@ -5,6 +5,8 @@
 {% for chap, ns in groupes.items() %}<optgroup label="{{ chap }}">{% for n in ns %}
 <option value="{{ n.id }}" {{ 'selected' if n.id==notion }}>{{ n.nom }}</option>{% endfor %}</optgroup>{% endfor %}</select>
 <a class="btn" href="{{ url_for('exo_form', notion=notion) }}">+ Nouvel exercice</a></form>
+{% if notion and exos %}<div class="row"><a class="btn pdf" href="{{ url_for('notion_pdf', notion_id=notion) }}">PDF des exercices de la notion</a>
+<a class="btn pdf" href="{{ url_for('notion_pdf', notion_id=notion, corrige=1) }}">PDF avec corrigés</a></div>{% endif %}
 {% if chapitre %}<div class="row"><a class="btn pdf" href="{{ url_for('chapitre_pdf', chap_id=chapitre) }}">PDF des exercices du chapitre</a>
 <a class="btn pdf" href="{{ url_for('chapitre_pdf', chap_id=chapitre, corrige=1) }}">PDF avec corrigés</a>
 <a class="pdf" href="{{ url_for('chapitre_pdf', chap_id=chapitre, rappels=0) }}">sans rappels de cours</a></div>{% endif %}
