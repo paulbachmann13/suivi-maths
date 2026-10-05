@@ -1,5 +1,6 @@
 import os
 import re
+import socket
 import sqlite3
 import unicodedata
 import subprocess
@@ -19,6 +20,9 @@ BROWSERS = [
 ]
 RESULTATS = {"ok": "Réussi", "aide": "Avec aide", "ko": "Pas compris"}
 SCORE = {"ok": 1.0, "aide": 0.5, "ko": 0.0}
+
+PORT = int(os.environ.get("SUIVI_PORT", "5000"))
+MODE_LAN = os.environ.get("SUIVI_LAN") == "1"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS chapitre (
@@ -296,7 +300,7 @@ def recap_pdf(chap_id):
     if err:
         flash(err)
         return redirect(url_for("recap_detail", chap_id=chap_id))
-    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom)
+    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom, as_attachment=True)
 
 
 # ---------- Fiches ----------
@@ -436,7 +440,7 @@ def chapitre_pdf(chap_id):
     if err:
         flash(err)
         return redirect(url_for("exos", chapitre=chap_id))
-    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom)
+    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom, as_attachment=True)
 
 
 def html_vers_pdf(chemin, nom):
@@ -451,7 +455,7 @@ def html_vers_pdf(chemin, nom):
     with tempfile.TemporaryDirectory() as profile:
         subprocess.run([browser, "--headless=new", "--disable-gpu", f"--user-data-dir={profile}",
                         "--no-pdf-header-footer", "--virtual-time-budget=8000",
-                        f"--print-to-pdf={out}", request.host_url + chemin],
+                        f"--print-to-pdf={out}", f"http://127.0.0.1:{PORT}/" + chemin],
                        check=False, timeout=60, capture_output=True)
     return None if os.path.exists(out) else "Échec de la génération PDF."
 
@@ -465,9 +469,31 @@ def fiche_pdf(fiche_id):
     if err:
         flash(err)
         return redirect(url_for("fiche_detail", fiche_id=fiche_id))
-    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom)
+    return send_file(os.path.join(BASE, "pdf", nom), mimetype="application/pdf", download_name=nom, as_attachment=True)
+
+
+def ip_locale():
+    """Adresse du PC sur le réseau local (celle à taper sur le téléphone)."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.connect(("10.255.255.255", 1))
+        return sock.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        sock.close()
+
+
+@app.route("/telephone")
+def telephone():
+    ip = ip_locale() if MODE_LAN else None
+    return render_template("telephone.html", url=f"http://{ip}:{PORT}" if ip else None, lan=MODE_LAN)
 
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=False, port=5000, threaded=True)
+    if MODE_LAN:
+        print()
+        print(f"  Mode téléphone : ouvre http://{ip_locale()}:{PORT} sur ton téléphone (même Wi-Fi que le PC)")
+        print()
+    app.run(host="0.0.0.0" if MODE_LAN else "127.0.0.1", debug=False, port=PORT, threaded=True)

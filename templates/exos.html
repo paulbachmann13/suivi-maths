@@ -5,9 +5,9 @@
 {% for chap, ns in groupes.items() %}<optgroup label="{{ chap }}">{% for n in ns %}
 <option value="{{ n.id }}" {{ 'selected' if n.id==notion }}>{{ n.nom }}</option>{% endfor %}</optgroup>{% endfor %}</select>
 <a class="btn" href="{{ url_for('exo_form', notion=notion) }}">+ Nouvel exercice</a></form>
-{% if chapitre %}<div class="row"><a class="btn" href="{{ url_for('chapitre_pdf', chap_id=chapitre) }}" target="_blank">PDF des exercices du chapitre</a>
-<a class="btn" href="{{ url_for('chapitre_pdf', chap_id=chapitre, corrige=1) }}" target="_blank">PDF avec corrigés</a>
-<a href="{{ url_for('chapitre_pdf', chap_id=chapitre, rappels=0) }}" target="_blank">sans rappels de cours</a></div>{% endif %}
+{% if chapitre %}<div class="row"><a class="btn pdf" href="{{ url_for('chapitre_pdf', chap_id=chapitre) }}">PDF des exercices du chapitre</a>
+<a class="btn pdf" href="{{ url_for('chapitre_pdf', chap_id=chapitre, corrige=1) }}">PDF avec corrigés</a>
+<a class="pdf" href="{{ url_for('chapitre_pdf', chap_id=chapitre, rappels=0) }}">sans rappels de cours</a></div>{% endif %}
 {% for e in exos %}
 <details class="card"><summary><b>{{ e.titre }}</b> <span class="muted">— {{ e.chapitre }} › {{ e.notion }} · {{ '★'*e.difficulte }}{% if e.nb_fiches %} · utilisé {{ e.nb_fiches }}×{% endif %}</span></summary>
 <div class="txt">{{ e.enonce|fmt }}</div>

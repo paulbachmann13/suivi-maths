@@ -20,4 +20,9 @@ window.addEventListener('load',()=>renderMath());
 <main>
 {% for m in get_flashed_messages() %}<div class="flash">{{ m }}</div>{% endfor %}
 {% block body %}{% endblock %}
-</main></body></html>
+</main>
+<script>
+document.querySelectorAll('a.pdf').forEach(a=>a.addEventListener('click',()=>{
+  const t=a.textContent;a.textContent='Génération du PDF… (quelques secondes)';a.style.opacity='.6';
+  setTimeout(()=>{a.textContent=t;a.style.opacity='1'},9000);}));
+</script></body></html>

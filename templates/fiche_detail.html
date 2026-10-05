@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% block body %}
 <h1>{{ fiche.titre }} <span class="muted">{{ fiche.date }}</span></h1>
-<div class="row"><a class="btn" href="{{ url_for('fiche_pdf', fiche_id=fiche.id) }}" target="_blank">PDF énoncés (élève)</a>
-<a class="btn" href="{{ url_for('fiche_pdf', fiche_id=fiche.id, corrige=1) }}" target="_blank">PDF corrigé (toi)</a>
+<div class="row"><a class="btn pdf" href="{{ url_for('fiche_pdf', fiche_id=fiche.id) }}">PDF énoncés (élève)</a>
+<a class="btn pdf" href="{{ url_for('fiche_pdf', fiche_id=fiche.id, corrige=1) }}">PDF corrigé (toi)</a>
 <a href="{{ url_for('fiche_print', fiche_id=fiche.id) }}" target="_blank">aperçu imprimable</a></div>
 <form method="post">
 <p>Statut : <select name="statut">{% for s in ('brouillon','envoyée','corrigée') %}<option {{ 'selected' if fiche.statut==s }}>{{ s }}</option>{% endfor %}</select>

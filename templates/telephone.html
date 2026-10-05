@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% block body %}
+<h1>Utiliser l'appli depuis le téléphone</h1>
+{% if lan and url %}
+<div class="card">
+<p>Sur ton téléphone (connecté au <b>même Wi-Fi</b> que le PC), scanne ce code ou tape l'adresse :</p>
+<div id="qr" style="margin:12px 0"></div>
+<p style="font-size:20px"><b>{{ url }}</b></p>
+<p class="muted">Le PC doit rester allumé avec la fenêtre noire ouverte. Les PDF se génèrent sur le PC et s'ouvrent sur le téléphone.</p>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>new QRCode(document.getElementById('qr'),{text:{{ url|tojson }},width:180,height:180});</script>
+{% else %}
+<div class="card">
+<p>L'appli est actuellement lancée en mode <b>PC seul</b>.</p>
+<p>Pour l'ouvrir aussi depuis le téléphone : ferme la fenêtre noire, puis lance <b>lancer-telephone.bat</b> (dans le dossier du projet). Reviens ensuite sur cette page pour obtenir le code à scanner.</p>
+<p class="muted">À utiliser sur ton Wi-Fi de la maison uniquement : sur ce mode, toute personne connectée au même réseau peut ouvrir l'appli.</p>
+</div>
+{% endif %}
+{% endblock %}

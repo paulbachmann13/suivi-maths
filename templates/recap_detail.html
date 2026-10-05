@@ -1,10 +1,10 @@
 {% extends "base.html" %}{% block body %}
 <p><a href="{{ url_for('recaps') }}">← Fiches recap</a></p>
 <h1>{{ chap.nom }} <span class="muted">{{ chap.domaine }}</span></h1>
-<div class="row"><a class="btn" href="{{ url_for('recap_pdf', chap_id=chap.id) }}" target="_blank">PDF de la fiche</a>
+<div class="row"><a class="btn pdf" href="{{ url_for('recap_pdf', chap_id=chap.id) }}">PDF de la fiche</a>
 <a class="btn" href="{{ url_for('recap_edit', chap_id=chap.id) }}">Modifier</a>
 <a href="{{ url_for('exos', chapitre=chap.id) }}">Exercices du chapitre</a>
-<a class="btn" href="{{ url_for('chapitre_pdf', chap_id=chap.id) }}" target="_blank">PDF des exercices</a>
+<a class="btn pdf" href="{{ url_for('chapitre_pdf', chap_id=chap.id) }}">PDF des exercices</a>
 <a href="{{ url_for('recap_print', chap_id=chap.id) }}" target="_blank">aperçu imprimable</a></div>
 <p class="muted">Notions : {% for n in notions %}{{ n.nom }}{{ ' · ' if not loop.last }}{% endfor %}</p>
 <div class="card recap">{% if contenu %}{{ contenu|fmt }}{% else %}<p class="muted">Pas encore de fiche recap pour ce chapitre.</p>{% endif %}</div>
