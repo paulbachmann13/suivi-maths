@@ -12,12 +12,9 @@ if not exist ".venv\Scripts\python.exe" (
 rem Cree la base et charge le programme si besoin (ne touche pas a tes donnees)
 ".venv\Scripts\python.exe" seed.py >nul
 
-rem Si l'appli tourne deja, on ouvre juste le navigateur
-netstat -an | findstr "127.0.0.1:5000" | findstr "LISTENING" >nul
-if not errorlevel 1 (
-    start "" http://127.0.0.1:5000
-    exit /b
-)
+rem Si une ancienne version de l'appli tourne encore, on l'arrete pour repartir sur la derniere version
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5000" ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+timeout /t 1 /nobreak >nul
 
 start "" /b cmd /c "timeout /t 2 /nobreak >nul & start http://127.0.0.1:5000"
 echo.

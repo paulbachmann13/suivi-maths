@@ -2,6 +2,8 @@ import os
 import re
 import socket
 import sqlite3
+import sys
+import threading
 import unicodedata
 import subprocess
 import tempfile
@@ -128,9 +130,42 @@ def fmt(text):
     return Markup("\n".join(html))
 
 
+def _git(*args):
+    try:
+        r = subprocess.run(["git", *args], cwd=BASE, capture_output=True, text=True, timeout=5)
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def numero_version():
+    """Numéro de version = nombre de commits (augmente à chaque mise à jour du code)."""
+    return _git("rev-list", "--count", "HEAD") or "?"
+
+
+def libelle_version():
+    date_commit = _git("log", "-1", "--format=%cd", "--date=format:%d/%m %H:%M")
+    return f"v{numero_version()}" + (f" · {date_commit}" if date_commit else "")
+
+
+VERSION_LANCEE = numero_version()
+LIBELLE_VERSION = libelle_version()
+
+
 @app.context_processor
 def inject():
-    return {"RESULTATS": RESULTATS}
+    return {"RESULTATS": RESULTATS, "version": LIBELLE_VERSION,
+            "maj_dispo": numero_version() != VERSION_LANCEE}
+
+
+@app.post("/redemarrer")
+def redemarrer():
+    """Relance l'appli (pour prendre en compte une mise à jour du code) puis recharge la page."""
+    commande = f'title Suivi maths & timeout /t 2 /nobreak >nul & "{sys.executable}" app.py'
+    flags = subprocess.CREATE_NEW_CONSOLE if os.name == "nt" else 0
+    subprocess.Popen(commande, shell=True, cwd=BASE, creationflags=flags)
+    threading.Timer(0.5, lambda: os._exit(0)).start()
+    return render_template("redemarrage.html")
 
 
 # ---------- Tableau de bord ----------

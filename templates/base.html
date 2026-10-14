@@ -16,13 +16,39 @@ window.addEventListener('load',()=>renderMath());
 <a href="{{ url_for('recaps') }}">Fiches recap</a>
 <a href="{{ url_for('exos') }}">Exercices</a>
 <a href="{{ url_for('fiches') }}">Fiches</a>
-<a href="{{ url_for('notions') }}">Notions</a></nav>
+<a href="{{ url_for('notions') }}">Notions</a>
+<span class="ver" title="Version de l'appli en cours d'exécution">{{ version }}</span>
+<button type="button" class="navbtn" onclick="location.reload()" title="Recharger la page">↻ Actualiser</button></nav>
+{% if maj_dispo %}<div class="maj">Une nouvelle version de l'appli est disponible.
+<form method="post" action="{{ url_for('redemarrer') }}" style="display:inline"><button class="navbtn">Redémarrer maintenant</button></form></div>{% endif %}
 <main>
 {% for m in get_flashed_messages() %}<div class="flash">{{ m }}</div>{% endfor %}
 {% block body %}{% endblock %}
 </main>
 <script>
-document.querySelectorAll('a.pdf').forEach(a=>a.addEventListener('click',()=>{
-  const t=a.textContent;a.textContent='Génération du PDF… (quelques secondes)';a.style.opacity='.6';
-  setTimeout(()=>{a.textContent=t;a.style.opacity='1'},9000);}));
+// Chaque bouton PDF télécharge son fichier en arrière-plan : on peut en cliquer plusieurs à la suite.
+document.querySelectorAll('a.pdf').forEach(a => a.addEventListener('click', async e => {
+  e.preventDefault();
+  if (a.dataset.busy) return;
+  a.dataset.busy = '1';
+  if (!a.dataset.t) a.dataset.t = a.textContent;
+  a.textContent = '⏳ Génération…'; a.style.opacity = '.6';
+  try {
+    const r = await fetch(a.href);
+    if (!r.ok) throw new Error(r.status);
+    const cd = r.headers.get('Content-Disposition') || '';
+    const m = /filename\*?=(?:UTF-8'')?"?([^";]+)/i.exec(cd);
+    const url = URL.createObjectURL(await r.blob());
+    const d = document.createElement('a');
+    d.href = url; d.download = m ? decodeURIComponent(m[1]) : 'exercices.pdf';
+    document.body.appendChild(d); d.click(); d.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    a.textContent = '✔ Téléchargé';
+  } catch (err) {
+    a.textContent = a.dataset.t; window.location.href = a.href;
+  } finally {
+    delete a.dataset.busy; a.style.opacity = '1';
+    setTimeout(() => { a.textContent = a.dataset.t; }, 3000);
+  }
+}));
 </script></body></html>

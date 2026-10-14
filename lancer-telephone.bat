@@ -10,12 +10,9 @@ if not exist ".venv\Scripts\python.exe" (
 )
 ".venv\Scripts\python.exe" seed.py >nul
 
-netstat -an | findstr "5000" | findstr "LISTENING" >nul
-if not errorlevel 1 (
-    echo L'appli tourne deja. Ferme son ancienne fenetre noire, puis relance ce fichier.
-    pause
-    exit /b
-)
+rem Si une ancienne version de l'appli tourne encore, on l'arrete pour repartir sur la derniere version
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5000" ^| findstr "LISTENING"') do taskkill /PID %%p /F /T >nul 2>&1
+timeout /t 1 /nobreak >nul
 
 set SUIVI_LAN=1
 start "" /b cmd /c "timeout /t 2 /nobreak >nul & start http://127.0.0.1:5000/telephone"

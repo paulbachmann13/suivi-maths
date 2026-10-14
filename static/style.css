@@ -13,3 +13,5 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px}td{p
 .tag{background:#eef1f6;border-radius:10px;padding:1px 8px;font-size:12px}.check{display:block;padding:3px 0}
 .recap h3{color:#1f3a5f;margin:18px 0 4px}.recap p{margin:4px 0}.box{border:1.5px solid #1f5fbf;background:#eef3fa;border-radius:6px;padding:6px 12px;margin:8px 0}
 .txt p{margin:3px 0}.txt pre,.recap pre{background:#f3f4f6;padding:8px 12px;border-radius:6px;overflow:auto}code{font-family:Consolas,monospace;background:#f3f4f6;padding:0 3px;border-radius:3px}pre code{background:none;padding:0}
+.ver{margin-left:auto;color:#b9c8dc;font-size:13px}.navbtn{background:#2f5586;color:#fff;border:1px solid #5a7fb0;border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer}
+.maj{background:#fff4d6;border-bottom:1px solid #e8c766;padding:8px 24px;color:#6b4e00}.maj .navbtn{background:#e8a317;border-color:#c98a0c;color:#1c2330;margin-left:8px}

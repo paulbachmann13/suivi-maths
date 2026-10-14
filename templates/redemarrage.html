@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block body %}
+<h1>Redémarrage de l'appli…</h1>
+<p class="muted">Une nouvelle fenêtre noire va s'ouvrir (tu peux la laisser). Cette page se recharge toute seule dans quelques secondes.</p>
+<script>
+let essais = 0;
+function verifier() {
+  fetch('/', {cache: 'no-store'}).then(r => { if (r.ok && essais > 2) location.href = '/'; else throw 0; })
+    .catch(() => { essais++; setTimeout(verifier, 800); });
+}
+setTimeout(verifier, 2500);
+</script>
+{% endblock %}
